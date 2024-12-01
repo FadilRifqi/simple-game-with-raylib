@@ -1,10 +1,17 @@
 package main
 
-import rl "github.com/gen2brain/raylib-go/raylib"
+import (
+	"fmt"
+	"os"
+	"strconv"
+	"strings"
+
+	rl "github.com/gen2brain/raylib-go/raylib"
+)
 
 const(
-	screenWidth = 800
-	screenHeight = 400
+	screenWidth = 1000
+	screenHeight = 480
 )
 
 var(
@@ -12,6 +19,13 @@ var(
 	bgColor = rl.NewColor(147, 211, 196, 255)
 
 	grassSprite rl.Texture2D
+	hillSprite rl.Texture2D
+	fenceSprite rl.Texture2D
+	houseSprite rl.Texture2D
+	waterSprite rl.Texture2D
+	tilledSprite rl.Texture2D
+
+	tex rl.Texture2D
 
 	playerSprite rl.Texture2D
 
@@ -45,9 +59,29 @@ func drawScene(){
 		if tileMap[i] != 0 {
 			tileDest.X = tileDest.Width * float32(i % mapW)
 			tileDest.Y = tileDest.Height * float32(i / mapW)
-			tileSrc.X = tileSrc.Width * float32((tileMap[i] - 1) % int(grassSprite.Width / int32(tileSrc.Width)))
-			tileSrc.Y = tileSrc.Height * float32((tileMap[i] - 1) / int(grassSprite.Width / int32(tileSrc.Width)))
-			rl.DrawTexturePro(grassSprite, tileSrc, tileDest, rl.NewVector2(tileDest.Width, tileDest.Height), 0, rl.White)
+
+			if srcMap[i] == "g" {
+				tex = grassSprite
+			}
+			if srcMap[i] == "h" {
+				tex = hillSprite
+			}
+			if srcMap[i] == "f" {
+				tex = fenceSprite
+			}
+			if srcMap[i] == "r" {
+				tex = houseSprite
+			}
+			if srcMap[i] == "w" {
+				tex = waterSprite
+			}
+			if srcMap[i] == "t" {
+				tex = tilledSprite
+			}
+
+			tileSrc.X = tileSrc.Width * float32((tileMap[i] - 1) % int(tex.Width / int32(tileSrc.Width)))
+			tileSrc.Y = tileSrc.Height * float32((tileMap[i] - 1) / int(tex.Width / int32(tileSrc.Width)))
+			rl.DrawTexturePro(tex, tileSrc, tileDest, rl.NewVector2(tileDest.Width, tileDest.Height), 0, rl.White)
 		}
 	}
 
@@ -92,11 +126,34 @@ func render() {
 	rl.EndDrawing()
 }
 
-func loadMap() {
-	mapW = 5
-	mapH = 5
-	for i := 0; i < (mapW*mapH); i++ {
-		tileMap = append(tileMap, 56)
+func loadMap(mapFile string) {
+	file, err := os.ReadFile(mapFile)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	removeNewLines := strings.Replace(string(file), "\r\n", " ", -1)
+	sliced := strings.Split(removeNewLines, " ")
+	mapW = -1
+	mapH = -1
+
+	for i := 0; i < len(sliced); i++ {
+		s, _ :=  strconv.ParseInt(sliced[i], 10, 64)
+		m:= int(s)
+
+
+		if mapW == -1 {
+			mapW = m
+		}else if mapH == -1 {
+			mapH = m
+		}else if i < mapW * mapH+2 {
+			tileMap = append(tileMap, m)
+		}else {
+			srcMap = append(srcMap, sliced[i])
+		}
+	}
+	if len(tileMap) > mapH * mapW {
+		tileMap = tileMap[:len(tileMap) - 1]
 	}
 }
 
@@ -141,11 +198,50 @@ func initialize() {
 	rl.SetExitKey(0)
 
 	grassSprite = rl.LoadTexture("resource/Tilesets/Grass.png")
+	if grassSprite.ID == 0 {
+        fmt.Println("Failed to load grass sprite texture")
+        os.Exit(1)
+    }
+
+	hillSprite = rl.LoadTexture("resource/Tilesets/Hills.png")
+	if hillSprite.ID == 0 {
+		fmt.Println("Failed to load dirt sprite texture")
+		os.Exit(1)
+	}
+
+	fenceSprite = rl.LoadTexture("resource/Tilesets/Fences.png")
+	if fenceSprite.ID == 0 {
+		fmt.Println("Failed to load fence sprite texture")
+		os.Exit(1)
+	}
+
+	houseSprite = rl.LoadTexture("resource/Tilesets/Wooden_House_Roof_Tilset.png")
+	if houseSprite.ID == 0 {
+		fmt.Println("Failed to load house sprite texture")
+		os.Exit(1)
+	}
+
+	waterSprite = rl.LoadTexture("resource/Tilesets/Water.png")
+	if waterSprite.ID == 0 {
+		fmt.Println("Failed to load water sprite texture")
+		os.Exit(1)
+	}
+
+	tilledSprite = rl.LoadTexture("resource/Tilesets/Tilled_Dirt_v2.png")
+	if tilledSprite.ID == 0 {
+		fmt.Println("Failed to load tilled sprite texture")
+		os.Exit(1)
+	}
 
 	tileDest = rl.NewRectangle(0, 0, 16, 16)
 	tileSrc = rl.NewRectangle(0, 0, 16, 16)
 
 	playerSprite = rl.LoadTexture("resource/Characters/BasicCharakterSpritesheet.png")
+	if playerSprite.ID == 0 {
+        fmt.Println("Failed to load player sprite texture")
+        os.Exit(1)
+    }
+
 
 	playerSrc = rl.NewRectangle(0, 0, 48, 48)
 	playerDest = rl.NewRectangle(200, 200, 100, 100)
@@ -158,12 +254,17 @@ func initialize() {
 	cam = rl.NewCamera2D(
     rl.NewVector2(float32(screenWidth/2), float32(screenHeight/2)), rl.NewVector2(float32(playerDest.X - (playerDest.Width/2)), float32(playerDest.Y - (playerDest.Height/2))), 0, 1.5 )
 
-	loadMap()
+	loadMap("one.map")
 }
 
 func quit() {
 	rl.UnloadTexture(grassSprite)
 	rl.UnloadTexture(playerSprite)
+	rl.UnloadTexture(hillSprite)
+	rl.UnloadTexture(fenceSprite)
+	rl.UnloadTexture(houseSprite)
+	rl.UnloadTexture(waterSprite)
+	rl.UnloadTexture(tilledSprite)
 	rl.UnloadMusicStream(music)
 	rl.CloseAudioDevice()
 	rl.CloseWindow()
