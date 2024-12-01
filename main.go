@@ -16,6 +16,12 @@ var(
 
 	playerSrc rl.Rectangle
 	playerDest rl.Rectangle
+	playerMoving bool
+	playerDir int
+	playerUp, playerDown, playerLeft, playerRight bool
+	playerFrame int
+
+	frameCount int
 
 	playerSpeed float32 = 3
 
@@ -32,16 +38,24 @@ func drawScene(){
 
 func input() {
 	if rl.IsKeyDown(rl.KeyW) || rl.IsKeyDown(rl.KeyUp) {
-		playerDest.Y -= playerSpeed
+		playerMoving = true
+		playerDir = 1
+		playerUp = true
 	}
 	if rl.IsKeyDown(rl.KeyA) || rl.IsKeyDown(rl.KeyLeft) {
-		playerDest.X -= playerSpeed
+		playerMoving = true
+		playerDir = 2
+		playerLeft = true
 	}
 	if rl.IsKeyDown(rl.KeyD) || rl.IsKeyDown(rl.KeyRight) {
-		playerDest.X += playerSpeed
+		playerMoving = true
+		playerDir = 3
+		playerRight = true
 	}
 	if rl.IsKeyDown(rl.KeyS) || rl.IsKeyDown(rl.KeyDown) {
-		playerDest.Y += playerSpeed
+		playerMoving = true
+		playerDir = 0
+		playerDown = true
 	}
 
 	if rl.IsKeyPressed(rl.KeyP) {
@@ -63,6 +77,22 @@ func render() {
 func update() {
 	running = !rl.WindowShouldClose()
 
+	playerSrc.X = 0
+
+	if playerMoving {
+		if playerUp {playerDest.Y -= playerSpeed}
+		if playerDown {playerDest.Y += playerSpeed}
+		if playerLeft {playerDest.X -= playerSpeed}
+		if playerRight {playerDest.X += playerSpeed}
+		if frameCount%8 == 1 {playerFrame++}
+		playerSrc.X = playerSrc.Width * float32(playerFrame)
+	}
+
+	frameCount++
+	if playerFrame > 3 {playerFrame = 0}
+
+	playerSrc.Y = playerSrc.Height * float32(playerDir)
+
 	rl.UpdateMusicStream(music)
 	if musicPaused {
 		rl.PauseMusicStream(music)
@@ -71,6 +101,9 @@ func update() {
 	}
 
 	cam.Target = rl.NewVector2(float32(playerDest.X - (playerDest.Width/2)), float32(playerDest.Y - (playerDest.Height/2)))
+
+	playerMoving = false
+	playerUp, playerDown, playerLeft, playerRight = false, false, false, false
 }
 
 func initialize() {
@@ -90,7 +123,7 @@ func initialize() {
 	rl.PlayMusicStream(music)
 
 	cam = rl.NewCamera2D(
-    rl.NewVector2(float32(screenWidth/2), float32(screenHeight/2)), rl.NewVector2(float32(playerDest.X - (playerDest.Width/2)), float32(playerDest.Y - (playerDest.Height/2))), 0, 1 )
+    rl.NewVector2(float32(screenWidth/2), float32(screenHeight/2)), rl.NewVector2(float32(playerDest.X - (playerDest.Width/2)), float32(playerDest.Y - (playerDest.Height/2))), 0, 1.5 )
 }
 
 func quit() {
