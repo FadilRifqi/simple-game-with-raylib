@@ -3,8 +3,8 @@ package main
 import rl "github.com/gen2brain/raylib-go/raylib"
 
 const(
-	screenWidth = 1280
-	screenHeight = 960
+	screenWidth = 800
+	screenHeight = 400
 )
 
 var(
@@ -12,6 +12,7 @@ var(
 	bgColor = rl.NewColor(147, 211, 196, 255)
 
 	grassSprite rl.Texture2D
+
 	playerSprite rl.Texture2D
 
 	playerSrc rl.Rectangle
@@ -23,6 +24,12 @@ var(
 
 	frameCount int
 
+	tileDest rl.Rectangle
+	tileSrc rl.Rectangle
+	tileMap []int
+	srcMap []string
+	mapW, mapH int
+
 	playerSpeed float32 = 3
 
 	musicPaused bool
@@ -32,7 +39,18 @@ var(
 )
 
 func drawScene(){
-	rl.DrawTexture(grassSprite, 100, 50, rl.White)
+	// rl.DrawTexture(grassSprite, 100, 50, rl.White)
+
+	for i:=0; i < len(tileMap); i++ {
+		if tileMap[i] != 0 {
+			tileDest.X = tileDest.Width * float32(i % mapW)
+			tileDest.Y = tileDest.Height * float32(i / mapW)
+			tileSrc.X = tileSrc.Width * float32((tileMap[i] - 1) % int(grassSprite.Width / int32(tileSrc.Width)))
+			tileSrc.Y = tileSrc.Height * float32((tileMap[i] - 1) / int(grassSprite.Width / int32(tileSrc.Width)))
+			rl.DrawTexturePro(grassSprite, tileSrc, tileDest, rl.NewVector2(tileDest.Width, tileDest.Height), 0, rl.White)
+		}
+	}
+
 	rl.DrawTexturePro(playerSprite, playerSrc, playerDest, rl.NewVector2(playerDest.Width, playerDest.Height), 0, rl.White)
 }
 
@@ -72,6 +90,14 @@ func render() {
 
 	rl.EndMode2D()
 	rl.EndDrawing()
+}
+
+func loadMap() {
+	mapW = 5
+	mapH = 5
+	for i := 0; i < (mapW*mapH); i++ {
+		tileMap = append(tileMap, 56)
+	}
 }
 
 func update() {
@@ -115,6 +141,10 @@ func initialize() {
 	rl.SetExitKey(0)
 
 	grassSprite = rl.LoadTexture("resource/Tilesets/Grass.png")
+
+	tileDest = rl.NewRectangle(0, 0, 16, 16)
+	tileSrc = rl.NewRectangle(0, 0, 16, 16)
+
 	playerSprite = rl.LoadTexture("resource/Characters/BasicCharakterSpritesheet.png")
 
 	playerSrc = rl.NewRectangle(0, 0, 48, 48)
@@ -127,6 +157,8 @@ func initialize() {
 
 	cam = rl.NewCamera2D(
     rl.NewVector2(float32(screenWidth/2), float32(screenHeight/2)), rl.NewVector2(float32(playerDest.X - (playerDest.Width/2)), float32(playerDest.Y - (playerDest.Height/2))), 0, 1.5 )
+
+	loadMap()
 }
 
 func quit() {
